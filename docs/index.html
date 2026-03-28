@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SplitMind - 隐私优先的 AI 任务编排系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 100px 0 60px;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .tagline {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+            color: #667eea;
+        }
+        
+        .features {
+            background: white;
+            padding: 80px 0;
+        }
+        
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+            color: #333;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+        
+        .feature-card {
+            padding: 40px;
+            border-radius: 20px;
+            background: #f8f9fa;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .feature-card p {
+            color: #666;
+            line-height: 1.8;
+        }
+        
+        .how-it-works {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+        
+        .how-it-works h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+        }
+        
+        .steps {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 40px;
+        }
+        
+        .step {
+            text-align: center;
+            max-width: 250px;
+        }
+        
+        .step-number {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+        
+        .step h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .step p {
+            color: #666;
+        }
+        
+        .code-example {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 80px 0;
+        }
+        
+        .code-example h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+        }
+        
+        .code-block {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .code-block code {
+            color: #00d4ff;
+        }
+        
+        footer {
+            background: #1a1a2e;
+            color: white;
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        footer a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .tagline {
+                font-size: 1.2rem;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🧠 SplitMind</h1>
+            <p class="tagline">隐私优先的 AI 任务编排系统</p>
+            <p style="font-size: 1.1rem; margin-bottom: 40px; opacity: 0.8;">
+                在享受 AI 能力的同时，完全掌控你的数据隐私
+            </p>
+            <div class="cta-buttons">
+                <a href="#get-started" class="btn btn-primary">快速开始</a>
+                <a href="https://github.com/yourusername/splitmind" class="btn btn-secondary">GitHub</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="features">
+        <div class="container">
+            <h2>核心特性</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>隐私保护</h3>
+                    <p>自动检测并脱敏敏感信息，所有隐私处理都在本地完成，确保数据不会暴露给任何 AI 提供商。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧩</div>
+                    <h3>智能拆分</h3>
+                    <p>智能分析任务类型，自动拆分为独立子任务，支持多种拆分策略，适应不同场景需求。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔀</div>
+                    <h3>多提供商支持</h3>
+                    <p>支持 OpenAI、Anthropic Claude、Kimi 等主流 AI 提供商，以及本地模型，避免供应商锁定。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>灵活执行模式</h3>
+                    <p>三种执行模式（Local Only / Hybrid / Online），在隐私保护和 AI 能力之间自由平衡。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>智能聚合</h3>
+                    <p>多种结果聚合策略，自动去重、补充和优化，确保最终输出质量。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💻</div>
+                    <h3>多种使用方式</h3>
+                    <p>提供 SDK、CLI 工具和 Web 界面，满足不同用户的使用习惯。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <div class="container">
+            <h2>工作原理</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>隐私保护</h3>
+                    <p>在本地检测并脱敏敏感信息，生成隐私报告</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>任务拆分</h3>
+                    <p>智能分析任务，拆分为多个独立子任务</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>分布式执行</h3>
+                    <p>将脱敏后的子任务分配给不同 AI 提供商</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>结果聚合</h3>
+                    <p>在本地聚合结果，并还原敏感信息</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="code-example" id="get-started">
+        <div class="container">
+            <h2>快速开始</h2>
+            <div class="code-block">
+                <pre><code># 安装 SplitMind
+pip install splitmind
+
+# 零配置体验隐私保护
+splitmind demo "你的文本"
+
+# 使用 Python SDK
+from splitmind import SplitMindEngine
+
+engine = SplitMindEngine()
+result = await engine.execute(
+    task="分析这份报告",
+    context=report_text,
+    execution_mode="hybrid"  # 平衡隐私和能力
+)
+
+print(result.final_result)</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>SplitMind © 2026 | <a href="https://github.com/yourusername/splitmind">GitHub</a> | <a href="https://splitmind.readthedocs.io">文档</a></p>
+            <p style="margin-top: 10px; opacity: 0.8;">开源协议：MIT License</p>
+        </div>
+    </footer>
+</body>
+</html>

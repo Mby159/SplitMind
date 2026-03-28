@@ -1,0 +1,64 @@
+[project]
+name = "splitmind-core"
+version = "0.1.0"
+description = "Core privacy protection and task orchestration for SplitMind"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "SplitMind Team"}
+]
+keywords = ["privacy", "security", "data-protection", "pii-detection"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Text Processing",
+]
+
+# 核心包：最小依赖，纯Python
+dependencies = [
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/splitmind"
+Documentation = "https://github.com/yourusername/splitmind#readme"
+Repository = "https://github.com/yourusername/splitmind"
+Issues = "https://github.com/yourusername/splitmind/issues"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["splitmind_core*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true

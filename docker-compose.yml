@@ -1,0 +1,47 @@
+# SplitMind Docker Compose 配置
+# 一键启动 SplitMind 完整环境
+
+version: '3.8'
+
+services:
+  splitmind:
+    build: .
+    container_name: splitmind
+    ports:
+      - "8000:8000"
+    environment:
+      # 可选：配置 API 密钥
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # KIMI_API_KEY: ${KIMI_API_KEY}
+      # 本地模型配置
+      LOCAL_MODEL_URL: http://ollama:11434/api
+      LOCAL_MODEL_NAME: llama3.2:3b
+    volumes:
+      # 挂载配置文件
+      - ./.env:/app/.env:ro
+    depends_on:
+      - ollama
+    networks:
+      - splitmind-network
+    restart: unless-stopped
+
+  # 可选：本地 Ollama 服务
+  ollama:
+    image: ollama/ollama:latest
+    container_name: splitmind-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - splitmind-network
+    restart: unless-stopped
+
+networks:
+  splitmind-network:
+    driver: bridge
+
+volumes:
+  ollama-data:
+    driver: local

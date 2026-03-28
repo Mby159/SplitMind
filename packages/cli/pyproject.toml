@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "splitmind-cli"
+dynamic = ["version"]
+description = "Command line interface for SplitMind - Privacy-preserving multi-agent task orchestration"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+keywords = ["privacy", "ai", "multi-agent", "orchestration", "cli"]
+authors = [
+    { name = "SplitMind Team" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "splitmind-core>=0.1.0",
+    "click>=8.0.0",
+    "rich>=13.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+splitmind = "splitmind_cli.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/splitmind"
+Documentation = "https://github.com/yourusername/splitmind#readme"
+Repository = "https://github.com/yourusername/splitmind.git"
+
+[tool.hatch.version]
+path = "splitmind_cli/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["/splitmind_cli", "/README.md", "/pyproject.toml"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["splitmind_cli"]

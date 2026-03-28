@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "splitmind-providers"
+dynamic = ["version"]
+description = "AI provider integrations for SplitMind - Privacy-preserving multi-agent task orchestration"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+keywords = ["privacy", "ai", "multi-agent", "orchestration", "providers"]
+authors = [
+    { name = "SplitMind Team" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "splitmind-core>=0.1.0",
+    "httpx>=0.27.0",
+]
+
+[project.optional-dependencies]
+openai = [
+    "openai>=1.0.0",
+]
+anthropic = [
+    "anthropic>=0.20.0",
+]
+kimi = [
+    "kimi>=0.1.0",
+]
+local = [
+    "psutil>=5.0.0",
+]
+all = [
+    "splitmind-providers[openai]",
+    "splitmind-providers[anthropic]",
+    "splitmind-providers[kimi]",
+    "splitmind-providers[local]",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/splitmind"
+Documentation = "https://github.com/yourusername/splitmind#readme"
+Repository = "https://github.com/yourusername/splitmind.git"
+
+[tool.hatch.version]
+path = "splitmind_providers/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["/splitmind_providers", "/README.md", "/pyproject.toml"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["splitmind_providers"]
