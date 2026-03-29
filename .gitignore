@@ -46,3 +46,6 @@ htmlcov/
 
 # Windows
 Thumbs.db
+
+# Documentation
+docs/commercialization-strategy.md

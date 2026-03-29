@@ -88,6 +88,11 @@ dev = [
 [project.scripts]
 splitmind = "splitmind.cli:main"
 
+[project.entry-points."splitmind.provider"]
+# 第三方插件可以通过这个 entry point 注册
+# 例如: my-provider = "my_provider.module:MyProvider"
+# 内置 providers 已在代码中自动注册
+
 [project.urls]
 Homepage = "https://github.com/yourusername/splitmind"
 Documentation = "https://github.com/yourusername/splitmind#readme"
