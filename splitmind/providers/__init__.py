@@ -24,13 +24,15 @@ export = [
     "registry",
     "register_provider",
     "ProviderInfo",
-    "ProviderCapability"
+    "ProviderCapability",
+    "ProviderStatus"
 ]
 
 # Also import from base to make them available at splitmind.providers
 from splitmind.providers.base import (
     ProviderInfo,
-    ProviderCapability
+    ProviderCapability,
+    ProviderStatus
 )
 
 # 1. Auto-discover built-in providers

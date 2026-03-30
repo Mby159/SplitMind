@@ -1,230 +1,210 @@
-"""
-Tests for SplitMind core modules.
-"""
-
 import pytest
-from splitmind.core.splitter import TaskSplitter, TaskType
 from splitmind.core.privacy import PrivacyHandler, RiskLevel
-from splitmind.core.aggregator import ResultAggregator, SubTaskResult, AggregationStrategy
-
-
-class TestTaskSplitter:
-    
-    def setup_method(self):
-        self.splitter = TaskSplitter()
-    
-    def test_detect_phone_numbers(self):
-        text = "请联系张三，电话：13812345678"
-        detected = self.splitter.detect_sensitive_info(text)
-        assert "phone" in detected
-        assert "13812345678" in detected["phone"]
-    
-    def test_detect_email(self):
-        text = "发送邮件到 test@example.com"
-        detected = self.splitter.detect_sensitive_info(text)
-        assert "email" in detected
-        assert "test@example.com" in detected["email"]
-    
-    def test_detect_id_card(self):
-        text = "身份证号：320123199001011234"
-        detected = self.splitter.detect_sensitive_info(text)
-        assert "id_card" in detected
-    
-    def test_redact_text(self):
-        text = "张三的电话是13812345678，邮箱是test@example.com"
-        redacted, mapping = self.splitter.redact_text(text)
-        
-        assert "13812345678" not in redacted
-        assert "test@example.com" not in redacted
-        assert len(mapping) > 0
-    
-    def test_analyze_task_type_analysis(self):
-        task = "请分析这份报告的主要观点"
-        task_type = self.splitter.analyze_task_type(task)
-        assert task_type == TaskType.ANALYSIS
-    
-    def test_analyze_task_type_summarization(self):
-        task = "请总结这篇文章的核心内容"
-        task_type = self.splitter.analyze_task_type(task)
-        assert task_type == TaskType.SUMMARIZATION
-    
-    def test_split_single_strategy(self):
-        task = "这是一个简短的任务"
-        result = self.splitter.split(task, strategy="single")
-        assert len(result.subtasks) == 1
-        assert result.split_strategy == "single"
-    
-    def test_split_section_strategy(self):
-        task = "第一段内容。\n\n第二段内容。\n\n第三段内容。"
-        result = self.splitter.split(task, strategy="section")
-        assert len(result.subtasks) >= 1
-
+from splitmind.core.splitter import TaskSplitter, SubTask
+from splitmind.core.aggregator import ResultAggregator, SubTaskResult, ResultQuality
+from splitmind.core.local_model import LocalModelInterface
+from splitmind.core.engine import SplitMindEngine, ExecutionMode, ExecutionConfig, ExecutionResult
 
 class TestPrivacyHandler:
+    """测试隐私处理器功能"""
     
-    def setup_method(self):
-        self.handler = PrivacyHandler()
-    
-    def test_detect_phone(self):
-        text = "联系电话：13812345678"
-        detected = self.handler.detect(text)
-        assert len(detected) > 0
-        assert detected[0].info_type == "phone"
-    
-    def test_detect_email(self):
-        text = "Email: user@example.com"
-        detected = self.handler.detect(text)
-        assert any(d.info_type == "email" for d in detected)
-    
-    def test_redact_and_restore(self):
-        text = "张三的电话是13812345678"
-        redacted, mapping = self.handler.redact(text)
+    def test_detect_sensitive_info(self):
+        """测试检测敏感信息"""
+        privacy_handler = PrivacyHandler()
+        text = "我的邮箱是 example@example.com，电话号码是 13800138000，身份证号是 110101199001011234"
+        sensitive_info = privacy_handler.detect_sensitive_info(text)
         
-        assert "13812345678" not in redacted
-        assert len(mapping) > 0
-        
-        restored = self.handler.restore(redacted, mapping)
-        assert "13812345678" in restored
+        assert len(sensitive_info) > 0
+        assert any(info['type'] == 'email' for info in sensitive_info)
+        assert any(info['type'] == 'phone' for info in sensitive_info)
+        assert any(info['type'] == 'id_card' for info in sensitive_info)
     
-    def test_generate_report(self):
-        text = "联系方式：13812345678，邮箱：test@example.com"
-        report = self.handler.generate_report(text)
+    def test_redact_sensitive_info(self):
+        """测试脱敏处理"""
+        privacy_handler = PrivacyHandler()
+        text = "我的邮箱是 example@example.com，电话号码是 13800138000"
+        redacted_text, mappings = privacy_handler.redact_sensitive_info(text)
         
-        assert report.total_items_detected >= 2
-        # Updated to use overall_risk_level instead of risk_level
-        assert report.overall_risk_level in [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL]
-        # Also check risk_level value
-        assert report.overall_risk_level.value in ["low", "medium", "high", "critical"]
-    
-    def test_custom_pattern(self):
-        handler = PrivacyHandler()
-        handler.add_custom_pattern("custom_id", r"CUSTOM-\d{4}")
-        
-        text = "ID: CUSTOM-1234"
-        detected = handler.detect(text)
-        assert any(d.info_type == "custom_id" for d in detected)
-
-
-class TestResultAggregator:
-    
-    def setup_method(self):
-        # Use lower threshold for tests to avoid quality filtering issues
-        self.aggregator = ResultAggregator(min_quality_threshold=0.1)
-    
-    def test_aggregate_single_result(self):
-        results = [
-            SubTaskResult(
-                subtask_id="task_1",
-                provider="openai",
-                result="这是结果，包含足够长的内容来通过质量评估。我们需要更多的文字来确保质量评分达到要求。",
-                success=True,
-            )
-        ]
-        
-        aggregated = self.aggregator.aggregate(results)
-        assert "这是结果" in aggregated.final_result
-        assert len(aggregated.providers_used) == 1
-    
-    def test_aggregate_parallel_merge(self):
-        results = [
-            SubTaskResult(
-                subtask_id="task_1",
-                provider="openai",
-                result="第一个结果，包含详细的信息和分析内容。这是一个高质量的输出，包含多个句子。",
-                success=True,
-            ),
-            SubTaskResult(
-                subtask_id="task_2",
-                provider="anthropic",
-                result="第二个结果，同样包含丰富的内容和详细的说明。这是另一个高质量的输出示例。",
-                success=True,
-            ),
-        ]
-        
-        aggregated = self.aggregator.aggregate(
-            results,
-            strategy=AggregationStrategy.PARALLEL_MERGE,
-        )
-        
-        assert len(aggregated.providers_used) == 2
-        assert len(aggregated.final_result) > 0
-    
-    def test_aggregate_with_failures(self):
-        results = [
-            SubTaskResult(
-                subtask_id="task_1",
-                provider="openai",
-                result="成功结果，这是一个成功的任务执行结果，包含足够的内容来通过质量评估。",
-                success=True,
-            ),
-            SubTaskResult(
-                subtask_id="task_2",
-                provider="anthropic",
-                result="",
-                success=False,
-                error="API Error",
-            ),
-        ]
-        
-        aggregated = self.aggregator.aggregate(results)
-        assert "成功结果" in aggregated.final_result
-        assert len(aggregated.subtask_results) == 2
+        assert "[EMAIL_0]" in redacted_text
+        assert "[PHONE_1]" in redacted_text
+        assert "example@example.com" not in redacted_text
+        assert "13800138000" not in redacted_text
+        assert len(mappings) == 2
     
     def test_restore_sensitive_info(self):
-        result = "用户 [REDACTED_PHONE_0] 的信息"
-        mapping = {"[REDACTED_PHONE_0]": "13812345678"}
+        """测试还原敏感信息"""
+        privacy_handler = PrivacyHandler()
+        text = "我的邮箱是 example@example.com，电话号码是 13800138000"
+        redacted_text, mappings = privacy_handler.redact_sensitive_info(text)
+        restored_text = privacy_handler.restore_sensitive_info(redacted_text, mappings)
         
-        restored = self.aggregator.restore_sensitive_info(result, mapping)
-        assert "13812345678" in restored
-        assert "[REDACTED_PHONE_0]" not in restored
+        assert restored_text == text
     
-    def test_aggregate_empty_results(self):
-        aggregated = self.aggregator.aggregate([])
-        assert aggregated.final_result == ""
-        assert len(aggregated.providers_used) == 0
+    def test_assess_risk(self):
+        """测试风险评估"""
+        privacy_handler = PrivacyHandler()
+        
+        # 低风险文本
+        low_risk_text = "这是一段普通文本，没有敏感信息"
+        low_risk = privacy_handler.assess_risk(low_risk_text)
+        assert low_risk == RiskLevel.LOW
+        
+        # 中风险文本
+        medium_risk_text = "我的邮箱是 example@example.com"
+        medium_risk = privacy_handler.assess_risk(medium_risk_text)
+        assert medium_risk in [RiskLevel.MEDIUM, RiskLevel.HIGH]
+        
+        # 高风险文本
+        high_risk_text = "我的身份证号是 110101199001011234，银行卡号是 6222021234567890123"
+        high_risk = privacy_handler.assess_risk(high_risk_text)
+        assert high_risk == RiskLevel.HIGH
 
-
-class TestIntegration:
+class TestTaskSplitter:
+    """测试任务拆分器功能"""
     
-    def test_full_pipeline(self):
+    def test_split_task_single(self):
+        """测试单任务拆分策略"""
         splitter = TaskSplitter()
-        privacy = PrivacyHandler()
-        aggregator = ResultAggregator(min_quality_threshold=0.1)
+        task = "请分析这份财务报告"
+        subtasks = splitter.split_task(task, strategy="single")
         
-        task = "分析张三（电话13812345678）的反馈信息"
-        
-        redacted, mapping = privacy.redact(task)
-        assert "13812345678" not in redacted
-        
-        split_result = splitter.split(redacted, strategy="single")
-        assert len(split_result.subtasks) == 1
-        
-        mock_result = SubTaskResult(
-            subtask_id="subtask_001",
-            provider="test",
-            result="分析完成，用户反馈积极。这是一个详细的分析结果，包含多个方面的评估和建议。",
-            success=True,
-        )
-        
-        aggregated = aggregator.aggregate([mock_result])
-        restored = aggregator.restore_sensitive_info(
-            aggregated.final_result,
-            mapping,
-        )
-        
-        assert len(aggregated.final_result) > 0
-        assert len(restored) > 0
+        assert len(subtasks) == 1
+        assert subtasks[0].content == task
     
-    def test_privacy_redaction_flow(self):
-        privacy = PrivacyHandler()
+    def test_split_task_section(self):
+        """测试分段拆分策略"""
+        splitter = TaskSplitter()
+        task = "请分析这份财务报告。提取关键指标。生成摘要。"
+        subtasks = splitter.split_task(task, strategy="section")
         
-        text = "客户张三的电话是13812345678，邮箱zhangsan@test.com"
-        redacted, mapping = privacy.redact(text)
+        assert len(subtasks) > 1
+    
+    def test_split_task_parallel(self):
+        """测试并行拆分策略"""
+        splitter = TaskSplitter()
+        task = "请分析财务报告并提取关键指标"
+        subtasks = splitter.split_task(task, strategy="parallel")
         
-        assert "13812345678" not in redacted
-        assert "zhangsan@test.com" not in redacted
-        assert len(mapping) >= 2
+        assert len(subtasks) > 1
+    
+    def test_calculate_execution_order(self):
+        """测试计算执行顺序"""
+        splitter = TaskSplitter()
         
-        restored = privacy.restore(redacted, mapping)
-        assert "13812345678" in restored
-        assert "zhangsan@test.com" in restored
+        # 创建具有依赖关系的子任务
+        subtask1 = SubTask(task_id="1", content="任务1", dependencies=[])
+        subtask2 = SubTask(task_id="2", content="任务2", dependencies=["1"])
+        subtask3 = SubTask(task_id="3", content="任务3", dependencies=["2"])
+        
+        execution_order = splitter.calculate_execution_order([subtask1, subtask2, subtask3])
+        assert execution_order == ["1", "2", "3"]
+
+class TestResultAggregator:
+    """测试结果聚合器功能"""
+    
+    def test_aggregate_sequential(self):
+        """测试顺序聚合策略"""
+        aggregator = ResultAggregator()
+        results = [
+            SubTaskResult(task_id="1", content="分析显示收入增长 10%"),
+            SubTaskResult(task_id="2", content="利润提升 15%"),
+            SubTaskResult(task_id="3", content="建议增加市场投入")
+        ]
+        aggregated = aggregator.aggregate(results, strategy="sequential")
+        
+        assert isinstance(aggregated, str)
+        assert "收入增长 10%" in aggregated
+        assert "利润提升 15%" in aggregated
+        assert "建议增加市场投入" in aggregated
+    
+    def test_assess_quality(self):
+        """测试结果质量评估"""
+        aggregator = ResultAggregator()
+        
+        # 高质量结果
+        high_quality = "这是一个详细、准确的分析报告，包含了所有关键信息。"
+        quality_high = aggregator.assess_quality(high_quality)
+        assert quality_high in [ResultQuality.HIGH, ResultQuality.MEDIUM]
+        
+        # 低质量结果
+        low_quality = "不知道"
+        quality_low = aggregator.assess_quality(low_quality)
+        assert quality_low in [ResultQuality.LOW, ResultQuality.MEDIUM]
+    
+    def test_detect_conflicts(self):
+        """测试冲突检测"""
+        aggregator = ResultAggregator()
+        
+        # 无冲突的结果
+        results_no_conflict = [
+            SubTaskResult(task_id="1", content="收入增长 10%"),
+            SubTaskResult(task_id="2", content="利润提升 15%")
+        ]
+        conflicts_no = aggregator.detect_conflicts(results_no_conflict)
+        assert len(conflicts_no) == 0
+        
+        # 有冲突的结果
+        results_conflict = [
+            SubTaskResult(task_id="1", content="收入增长 10%"),
+            SubTaskResult(task_id="2", content="收入下降 5%")
+        ]
+        conflicts = aggregator.detect_conflicts(results_conflict)
+        assert len(conflicts) > 0
+
+class TestLocalModelInterface:
+    """测试本地模型接口功能"""
+    
+    def test_generate(self):
+        """测试文本生成"""
+        local_model = LocalModelInterface(model="llama3.2:3b")
+        response = local_model.generate("Hello, how are you?")
+        
+        assert isinstance(response, str)
+        assert len(response) > 0
+    
+    def test_classify(self):
+        """测试文本分类"""
+        local_model = LocalModelInterface(model="llama3.2:3b")
+        classification = local_model.classify("This is a test", labels=["positive", "negative", "neutral"])
+        
+        assert isinstance(classification, str)
+        assert classification in ["positive", "negative", "neutral"]
+    
+    def test_merge_results(self):
+        """测试结果合并"""
+        local_model = LocalModelInterface(model="llama3.2:3b")
+        results = ["Result 1", "Result 2", "Result 3"]
+        merged = local_model.merge_results(results)
+        
+        assert isinstance(merged, str)
+        assert len(merged) > 0
+
+class TestEngine:
+    """测试引擎功能"""
+    
+    def test_execute_sync_local_only(self):
+        """测试本地模式处理任务"""
+        engine = SplitMindEngine(config=ExecutionConfig(execution_mode=ExecutionMode.LOCAL_ONLY))
+        task = "请告诉我 1 + 1 等于多少"
+        result = engine.execute_sync(task)
+        
+        assert isinstance(result, ExecutionResult)
+        assert result.success
+        assert len(result.final_result) > 0
+    
+    def test_config_execution_mode(self):
+        """测试设置执行模式"""
+        # 测试 LOCAL_ONLY 模式
+        engine_local = SplitMindEngine(config=ExecutionConfig(execution_mode=ExecutionMode.LOCAL_ONLY))
+        assert engine_local.config.execution_mode == ExecutionMode.LOCAL_ONLY
+        
+        # 测试 HYBRID 模式
+        engine_hybrid = SplitMindEngine(config=ExecutionConfig(execution_mode=ExecutionMode.HYBRID))
+        assert engine_hybrid.config.execution_mode == ExecutionMode.HYBRID
+        
+        # 测试 ONLINE 模式
+        engine_online = SplitMindEngine(config=ExecutionConfig(execution_mode=ExecutionMode.ONLINE))
+        assert engine_online.config.execution_mode == ExecutionMode.ONLINE
+
+if __name__ == "__main__":
+    pytest.main([__file__])

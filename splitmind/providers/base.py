@@ -16,6 +16,13 @@ class ProviderCapability(str, Enum):
     FUNCTION_CALLING = "function_calling"
 
 
+class ProviderStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    ERROR = "error"
+    UNKNOWN = "unknown"
+
+
 class ProviderInfo(BaseModel):
     name: str
     description: str

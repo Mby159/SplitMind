@@ -13,7 +13,7 @@ def run_cli_command(command):
         [sys.executable, "splitmind/cli.py"] + command.split(),
         capture_output=True,
         text=True,
-        cwd="d:\trae1\3\splitmind"
+        cwd=r"d:\trae1\3\splitmind"
     )
     return result.returncode, result.stdout, result.stderr
 

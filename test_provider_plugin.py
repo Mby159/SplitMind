@@ -33,7 +33,7 @@ for provider_name in ['openai', 'anthropic', 'kimi', 'local']:
     provider = registry.get(provider_name)
     if provider:
         info = provider.get_info()
-        print(f"  ✓ {provider_name}: available (model: {info.model})")
+        print(f"  ✓ {provider_name}: available (model: {info.models[0] if info.models else 'N/A'})")
     else:
         print(f"  ⚠ {provider_name}: not initialized (API key not found?)")
 print()
@@ -44,19 +44,23 @@ print("3. Testing external provider registration...")
 class TestProvider(BaseProvider):
     """Test provider for plugin system"""
     
-    def __init__(self, api_key=None, base_url=None, model="test-model", **kwargs):
-        super().__init__(api_key=api_key, base_url=base_url, model=model, **kwargs)
+    def _default_model(self) -> str:
+        return "test-model"
     
     def get_info(self):
         return ProviderInfo(
             name="test",
-            model=self.model,
+            description="Test provider",
+            models=[self.model],
             capabilities=[ProviderCapability.CHAT],
             max_tokens=4096,
             supports_streaming=False
         )
     
-    async def generate(self, prompt, **kwargs):
+    def generate(self, prompt, **kwargs):
+        return f"Test response: {prompt}"
+    
+    async def generate_async(self, prompt, **kwargs):
         return f"Test response: {prompt}"
 
 # Register the test provider
@@ -78,7 +82,8 @@ else:
 print("4. Testing provider creation by name...")
 local_provider = registry.create_provider("local", model="llama3.2:3b")
 if local_provider:
-    print(f"  ✓ Created local provider: {local_provider.get_info().model}")
+    info = local_provider.get_info()
+    print(f"  ✓ Created local provider: {info.models[0] if info.models else 'N/A'}")
 else:
     print("  ⚠ Could not create local provider")
 
