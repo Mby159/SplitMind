@@ -93,7 +93,7 @@ async def analyze_text(request: AnalyzeRequest):
     report = handler.generate_report(request.text)
     
     return {
-        "risk_level": report.risk_level,
+        "risk_level": report.overall_risk_level.value,
         "total_detected": report.total_items_detected,
         "items_by_type": report.items_by_type,
         "redacted_text": report.redacted_text,
@@ -131,12 +131,7 @@ async def execute_task(request: TaskRequest):
     )
     
     execution_id = str(uuid.uuid4())
-    execution_history[execution_id] = {
-        "result": result,
-        "timestamp": datetime.now().isoformat(),
-    }
-    
-    return {
+    response_payload = {
         "execution_id": execution_id,
         "success": result.success,
         "final_result": result.final_result,
@@ -154,6 +149,19 @@ async def execute_task(request: TaskRequest):
         } if result.aggregated_result else None,
     }
 
+    # Do not persist the full ExecutionResult in history: it can contain
+    # original_task, original_input, sensitive mapping, or restored output.
+    execution_history[execution_id] = {
+        "timestamp": datetime.now().isoformat(),
+        "success": result.success,
+        "execution_time": result.execution_time,
+        "privacy_report": result.privacy_report,
+        "split_result": response_payload["split_result"],
+        "aggregated_result": response_payload["aggregated_result"],
+    }
+    
+    return response_payload
+
 
 @app.get("/api/execution/{execution_id}")
 async def get_execution(execution_id: str):
@@ -170,7 +178,7 @@ async def get_history():
             {
                 "id": eid,
                 "timestamp": data["timestamp"],
-                "success": data["result"].success,
+                "success": data["success"],
             }
             for eid, data in execution_history.items()
         ]
