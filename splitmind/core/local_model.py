@@ -5,7 +5,6 @@ Local Model Interface - Interface for using local small models for enhanced func
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
 import json
-import httpx
 import time
 from enum import Enum
 
@@ -53,17 +52,30 @@ class LocalModelInterface:
             config.model_name = model
         
         self.config = config
-        self.client = httpx.Client(
-            timeout=httpx.Timeout(self.config.timeout),
-            follow_redirects=True
-        )
+        self.client: Optional[Any] = None
+        self._httpx_error: Optional[Exception] = None
         self._is_available = False
-        self._test_connection()
+
+        try:
+            import httpx
+
+            self.client = httpx.Client(
+                timeout=httpx.Timeout(self.config.timeout),
+                follow_redirects=True
+            )
+            self._test_connection()
+        except ImportError as e:
+            # httpx is an optional dependency for local/provider backends. Core
+            # SplitMind imports should continue to work without it, and local
+            # generation falls back to deterministic default responses.
+            self._httpx_error = e
     
     def _test_connection(self):
         """Test if the local model backend is available."""
         try:
-            if self.config.backend == LocalModelBackend.OLLAMA:
+            if self.client is None:
+                self._is_available = False
+            elif self.config.backend == LocalModelBackend.OLLAMA:
                 response = self.client.get(f"{self.config.base_url}/tags")
                 self._is_available = response.status_code == 200
             else:
@@ -107,6 +119,8 @@ class LocalModelInterface:
         
         for attempt in range(self.config.max_retries):
             try:
+                if self.client is None:
+                    raise RuntimeError("httpx is required for local model HTTP backends")
                 response = self.client.post(url, json=payload)
                 response.raise_for_status()
                 result = response.json()
@@ -269,7 +283,8 @@ JSON output:"""
     
     def close(self):
         """Close the client connection."""
-        self.client.close()
+        if self.client is not None:
+            self.client.close()
     
     def __enter__(self):
         return self
