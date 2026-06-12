@@ -114,6 +114,14 @@ class SplitMindEngine:
         """
         start_time = datetime.now()
         
+        previous_auto_redaction = getattr(
+            self.task_splitter, "enable_auto_redaction", None
+        )
+        if previous_auto_redaction is not None:
+            self.task_splitter.enable_auto_redaction = (
+                self.config.enable_privacy_protection
+            )
+
         try:
             full_input = f"{context}\n\n{task}" if context else task
             
@@ -211,6 +219,9 @@ class SplitMindEngine:
                 execution_time=execution_time,
                 metadata={"error": str(e)},
             )
+        finally:
+            if previous_auto_redaction is not None:
+                self.task_splitter.enable_auto_redaction = previous_auto_redaction
     
     async def _split_with_online(
         self,
