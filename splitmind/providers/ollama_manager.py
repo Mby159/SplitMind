@@ -225,12 +225,14 @@ After installation, start Ollama and run this command again.
         manager = OllamaManager()
 
         if not await manager.is_running():
-            print("""
+            print(
+                """
 Ollama is installed but not running.
 Please start Ollama first:
     - Windows: Start Ollama from the Start menu
     - macOS/Linux: Run 'ollama serve' in terminal
-""")
+"""
+            )
             return None
 
         # Use a small, fast model as default

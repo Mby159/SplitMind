@@ -77,12 +77,14 @@ class LocalProviderV2(BaseProvider):
 
         # Check if Ollama is running
         if not await self.manager.is_running():
-            print("""
+            print(
+                """
 Ollama is installed but not running.
 Please start Ollama first:
     - Windows: Start Ollama from the Start menu or system tray
     - macOS/Linux: Run 'ollama serve' in terminal
-            """)
+            """
+            )
             return False
 
         # Ensure the model is available
