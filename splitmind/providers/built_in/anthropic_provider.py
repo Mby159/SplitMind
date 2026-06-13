@@ -12,10 +12,10 @@ class AnthropicProvider(BaseProvider):
     """
     Anthropic Provider - Supports Claude 3 and newer models.
     """
-    
+
     def _default_model(self) -> str:
         return "claude-3-opus-20240229"
-    
+
     def get_info(self) -> ProviderInfo:
         return ProviderInfo(
             name="anthropic",
@@ -34,11 +34,12 @@ class AnthropicProvider(BaseProvider):
             max_tokens=200000,
             supports_streaming=True,
         )
-    
+
     def _get_client(self):
         if self._client is None:
             try:
                 from anthropic import Anthropic
+
                 self._client = Anthropic(api_key=self.api_key)
             except ImportError:
                 raise ImportError(
@@ -46,7 +47,7 @@ class AnthropicProvider(BaseProvider):
                     "Please install it with: pip install anthropic"
                 )
         return self._client
-    
+
     def generate(
         self,
         prompt: str,
@@ -55,10 +56,10 @@ class AnthropicProvider(BaseProvider):
         **kwargs,
     ) -> str:
         client = self._get_client()
-        
+
         system = system_prompt or self._build_system_prompt(task_type)
         config = self._merge_config(**kwargs)
-        
+
         response = client.messages.create(
             model=self.model,
             max_tokens=config["max_tokens"],
@@ -68,9 +69,9 @@ class AnthropicProvider(BaseProvider):
                 {"role": "user", "content": prompt},
             ],
         )
-        
+
         return response.content[0].text
-    
+
     async def generate_async(
         self,
         prompt: str,
@@ -79,10 +80,10 @@ class AnthropicProvider(BaseProvider):
         **kwargs,
     ) -> str:
         client = self._get_client()
-        
+
         system = system_prompt or self._build_system_prompt(task_type)
         config = self._merge_config(**kwargs)
-        
+
         response = await asyncio.to_thread(
             client.messages.create,
             model=self.model,
@@ -93,9 +94,9 @@ class AnthropicProvider(BaseProvider):
                 {"role": "user", "content": prompt},
             ],
         )
-        
+
         return response.content[0].text
-    
+
     def generate_stream(
         self,
         prompt: str,
@@ -104,10 +105,10 @@ class AnthropicProvider(BaseProvider):
         **kwargs,
     ):
         client = self._get_client()
-        
+
         system = system_prompt or self._build_system_prompt(task_type)
         config = self._merge_config(**kwargs)
-        
+
         with client.messages.stream(
             model=self.model,
             max_tokens=config["max_tokens"],

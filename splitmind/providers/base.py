@@ -44,11 +44,11 @@ class GenerationConfig(BaseModel):
 class BaseProvider(ABC):
     """
     Abstract base class for AI providers.
-    
+
     All AI provider implementations must inherit from this class
     and implement the required methods.
     """
-    
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -61,15 +61,15 @@ class BaseProvider(ABC):
         self.model = model or self._default_model()
         self.config = config or GenerationConfig()
         self._client = None
-    
+
     @abstractmethod
     def _default_model(self) -> str:
         pass
-    
+
     @abstractmethod
     def get_info(self) -> ProviderInfo:
         pass
-    
+
     @abstractmethod
     def generate(
         self,
@@ -79,7 +79,7 @@ class BaseProvider(ABC):
         **kwargs,
     ) -> str:
         pass
-    
+
     @abstractmethod
     async def generate_async(
         self,
@@ -89,10 +89,10 @@ class BaseProvider(ABC):
         **kwargs,
     ) -> str:
         pass
-    
+
     def _build_system_prompt(self, task_type: Optional[str]) -> str:
         base_prompt = "You are a helpful AI assistant."
-        
+
         task_prompts = {
             "analysis": "You are an analytical AI assistant. Provide thorough, structured analysis.",
             "generation": "You are a creative AI assistant. Generate high-quality content.",
@@ -102,12 +102,12 @@ class BaseProvider(ABC):
             "classification": "You are a classification expert. Categorize information accurately.",
             "reasoning": "You are a logical reasoning expert. Provide clear, step-by-step reasoning.",
         }
-        
+
         if task_type and task_type in task_prompts:
             return task_prompts[task_type]
-        
+
         return base_prompt
-    
+
     def _merge_config(self, **kwargs) -> Dict[str, Any]:
         config = {
             "temperature": kwargs.get("temperature", self.config.temperature),
@@ -116,36 +116,36 @@ class BaseProvider(ABC):
             "frequency_penalty": kwargs.get("frequency_penalty", self.config.frequency_penalty),
             "presence_penalty": kwargs.get("presence_penalty", self.config.presence_penalty),
         }
-        
+
         if self.config.stop_sequences or kwargs.get("stop"):
             config["stop"] = kwargs.get("stop", self.config.stop_sequences)
-        
+
         return config
-    
+
     def validate_connection(self) -> bool:
         try:
             result = self.generate("Hello, this is a connection test.", max_tokens=10)
             return len(result) > 0
         except Exception:
             return False
-    
+
     async def validate_connection_async(self) -> bool:
         try:
             result = await self.generate_async("Hello, this is a connection test.", max_tokens=10)
             return len(result) > 0
         except Exception:
             return False
-    
+
     def estimate_tokens(self, text: str) -> int:
         char_count = len(text)
-        
-        chinese_chars = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
+
+        chinese_chars = sum(1 for c in text if "\u4e00" <= c <= "\u9fff")
         non_chinese_chars = char_count - chinese_chars
-        
+
         estimated = chinese_chars * 2 + non_chinese_chars // 4
-        
+
         return max(estimated, 1)
-    
+
     def __repr__(self) -> str:
         info = self.get_info()
         return f"<{self.__class__.__name__}: {info.name} ({self.model})>"

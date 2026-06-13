@@ -18,6 +18,7 @@ class LocalModelBackend(str, Enum):
 
 class LocalModelConfig(BaseModel):
     """Configuration for local model."""
+
     model_name: str = "llama3.2:3b"
     backend: LocalModelBackend = LocalModelBackend.OLLAMA
     base_url: str = "http://localhost:11434/api"
@@ -30,19 +31,19 @@ class LocalModelConfig(BaseModel):
 class LocalModelInterface:
     """
     Local Model Interface - Interface for interacting with local small models.
-    
+
     Supports multiple backends:
     - Ollama (default)
     - MLC-LLM
     - TensorRT-LLM
-    
+
     Provides capabilities for:
     - Text generation
     - Classification
     - Semantic analysis
     - PII detection enhancement
     """
-    
+
     def __init__(self, config: Optional[LocalModelConfig] = None, model: Optional[str] = None):
         # Create config if not provided
         if config is None:
@@ -50,7 +51,7 @@ class LocalModelInterface:
         # Override model_name if provided
         if model is not None:
             config.model_name = model
-        
+
         self.config = config
         self.client: Optional[Any] = None
         self._httpx_error: Optional[Exception] = None
@@ -60,8 +61,7 @@ class LocalModelInterface:
             import httpx
 
             self.client = httpx.Client(
-                timeout=httpx.Timeout(self.config.timeout),
-                follow_redirects=True
+                timeout=httpx.Timeout(self.config.timeout), follow_redirects=True
             )
             self._test_connection()
         except ImportError as e:
@@ -69,7 +69,7 @@ class LocalModelInterface:
             # SplitMind imports should continue to work without it, and local
             # generation falls back to deterministic default responses.
             self._httpx_error = e
-    
+
     def _test_connection(self):
         """Test if the local model backend is available."""
         try:
@@ -83,17 +83,17 @@ class LocalModelInterface:
                 self._is_available = True
         except Exception:
             self._is_available = False
-    
+
     def is_available(self) -> bool:
         """Check if the local model is available."""
         return self._is_available
-    
+
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate text using the local model."""
         if not self._is_available:
             # For test compatibility, return a default response
             return "This is a default response from the local model"
-        
+
         if self.config.backend == LocalModelBackend.OLLAMA:
             try:
                 return self._ollama_generate(prompt, **kwargs)
@@ -103,7 +103,7 @@ class LocalModelInterface:
         else:
             # For test compatibility, return a default response
             return "This is a default response from the local model"
-    
+
     def _ollama_generate(self, prompt: str, **kwargs) -> str:
         """Generate text using Ollama."""
         url = f"{self.config.base_url}/generate"
@@ -114,9 +114,9 @@ class LocalModelInterface:
                 "temperature": kwargs.get("temperature", self.config.temperature),
                 "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
             },
-            "stream": False
+            "stream": False,
         }
-        
+
         for attempt in range(self.config.max_retries):
             try:
                 if self.client is None:
@@ -125,16 +125,17 @@ class LocalModelInterface:
                 response.raise_for_status()
                 result = response.json()
                 return result.get("response", "")
-            except Exception as e:
+            except Exception:
                 if attempt == self.config.max_retries - 1:
                     raise
                 time.sleep(1)
-    
+        raise RuntimeError("local model generation failed")
+
     def classify(self, text: str, labels: List[str]) -> str:
         """Classify text into one of the given labels."""
         # Use labels instead of categories for test compatibility
         categories = labels
-        
+
         prompt = f"""Classify the following text into one of the given categories. 
 Return only the category name, no other text.
 
@@ -143,7 +144,7 @@ Text: {text}
 Categories: {', '.join(categories)}
 
 Category:"""
-        
+
         try:
             response = self.generate(prompt)
             # Extract the first category that appears in the response
@@ -152,10 +153,10 @@ Category:"""
                     return category
         except Exception:
             pass
-        
+
         # Fallback: return the first label
         return labels[0] if labels else ""
-    
+
     def classify_with_scores(self, text: str, categories: List[str]) -> Dict[str, float]:
         """Classify text into given categories with scores."""
         prompt = f"""Classify the following text into one of the given categories. 
@@ -166,21 +167,21 @@ Text: {text}
 Categories: {', '.join(categories)}
 
 JSON output:"""
-        
+
         response = self.generate(prompt)
         try:
             # Extract JSON from response
-            json_start = response.find('{')
-            json_end = response.rfind('}') + 1
+            json_start = response.find("{")
+            json_end = response.rfind("}") + 1
             if json_start != -1 and json_end != 0:
                 json_str = response[json_start:json_end]
                 return json.loads(json_str)
         except Exception:
             pass
-        
+
         # Fallback: return equal scores
         return {cat: 1.0 / len(categories) for cat in categories}
-    
+
     def detect_pii(self, text: str) -> List[Dict[str, Any]]:
         """Detect PII using the local model."""
         prompt = f"""Identify all personally identifiable information (PII) in the following text.
@@ -198,20 +199,20 @@ PII types to detect:
 - amount (financial amounts)
 
 JSON output:"""
-        
+
         response = self.generate(prompt)
         try:
             # Extract JSON from response
-            json_start = response.find('[')
-            json_end = response.rfind(']') + 1
+            json_start = response.find("[")
+            json_end = response.rfind("]") + 1
             if json_start != -1 and json_end != 0:
                 json_str = response[json_start:json_end]
                 return json.loads(json_str)
         except Exception:
             pass
-        
+
         return []
-    
+
     def analyze_task(self, task: str) -> Dict[str, Any]:
         """Analyze a task and return structured information."""
         prompt = f"""Analyze the following task and return a JSON object with:
@@ -223,26 +224,26 @@ JSON output:"""
 Task: {task}
 
 JSON output:"""
-        
+
         response = self.generate(prompt)
         try:
             # Extract JSON from response
-            json_start = response.find('{')
-            json_end = response.rfind('}') + 1
+            json_start = response.find("{")
+            json_end = response.rfind("}") + 1
             if json_start != -1 and json_end != 0:
                 json_str = response[json_start:json_end]
                 return json.loads(json_str)
         except Exception:
             pass
-        
+
         # Fallback
         return {
             "task_type": "mixed",
             "complexity": "medium",
             "requires_context": False,
-            "recommended_strategy": "auto"
+            "recommended_strategy": "auto",
         }
-    
+
     def merge_results(self, results: List[str], context: Optional[str] = None) -> str:
         """Merge multiple results into a coherent summary."""
         results_text = "\n\n".join(f"Result {i+1}: {result}" for i, result in enumerate(results))
@@ -254,9 +255,9 @@ Results:
 {results_text}
 
 Summary:"""
-        
+
         return self.generate(prompt)
-    
+
     def detect_conflicts(self, results: List[str]) -> List[Dict[str, Any]]:
         """Detect conflicts between multiple results."""
         results_text = "\n\n".join(f"Result {i+1}: {result}" for i, result in enumerate(results))
@@ -267,27 +268,27 @@ Results:
 {results_text}
 
 JSON output:"""
-        
+
         response = self.generate(prompt)
         try:
             # Extract JSON from response
-            json_start = response.find('[')
-            json_end = response.rfind(']') + 1
+            json_start = response.find("[")
+            json_end = response.rfind("]") + 1
             if json_start != -1 and json_end != 0:
                 json_str = response[json_start:json_end]
                 return json.loads(json_str)
         except Exception:
             pass
-        
+
         return []
-    
+
     def close(self):
         """Close the client connection."""
         if self.client is not None:
             self.client.close()
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()

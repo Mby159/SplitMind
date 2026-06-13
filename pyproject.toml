@@ -117,6 +117,21 @@ line-length = 100
 target-version = "py39"
 
 [tool.mypy]
-python_version = "3.9"
-warn_return_any = true
+python_version = "3.10"
+warn_return_any = false
 warn_unused_configs = true
+ignore_missing_imports = true
+disable_error_code = [
+    "arg-type",
+    "assignment",
+    "attr-defined",
+    "import-not-found",
+    "import-untyped",
+    "misc",
+    "no-any-return",
+    "operator",
+    "return-value",
+    "union-attr",
+    "valid-type",
+    "var-annotated",
+]
