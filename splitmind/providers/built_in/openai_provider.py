@@ -2,7 +2,7 @@
 OpenAI Provider - Implementation for OpenAI GPT models.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional
 import asyncio
 
 from splitmind.providers.base import BaseProvider, ProviderInfo, ProviderCapability
@@ -12,10 +12,10 @@ class OpenAIProvider(BaseProvider):
     """
     OpenAI Provider - Supports GPT-4, GPT-3.5, and other OpenAI models.
     """
-    
+
     def _default_model(self) -> str:
         return "gpt-4"
-    
+
     def get_info(self) -> ProviderInfo:
         return ProviderInfo(
             name="openai",
@@ -38,22 +38,22 @@ class OpenAIProvider(BaseProvider):
             max_tokens=128000 if "gpt-4" in self.model else 16384,
             supports_streaming=True,
         )
-    
+
     def _get_client(self):
         if self._client is None:
             try:
                 from openai import OpenAI
+
                 self._client = OpenAI(
                     api_key=self.api_key,
                     base_url=self.base_url,
                 )
             except ImportError:
                 raise ImportError(
-                    "OpenAI package not installed. "
-                    "Please install it with: pip install openai"
+                    "OpenAI package not installed. " "Please install it with: pip install openai"
                 )
         return self._client
-    
+
     def generate(
         self,
         prompt: str,
@@ -62,15 +62,15 @@ class OpenAIProvider(BaseProvider):
         **kwargs,
     ) -> str:
         client = self._get_client()
-        
+
         system = system_prompt or self._build_system_prompt(task_type)
         config = self._merge_config(**kwargs)
-        
+
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ]
-        
+
         response = client.chat.completions.create(
             model=self.model,
             messages=messages,
@@ -81,9 +81,9 @@ class OpenAIProvider(BaseProvider):
             presence_penalty=config["presence_penalty"],
             stop=config.get("stop"),
         )
-        
+
         return response.choices[0].message.content or ""
-    
+
     async def generate_async(
         self,
         prompt: str,
@@ -92,15 +92,15 @@ class OpenAIProvider(BaseProvider):
         **kwargs,
     ) -> str:
         client = self._get_client()
-        
+
         system = system_prompt or self._build_system_prompt(task_type)
         config = self._merge_config(**kwargs)
-        
+
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ]
-        
+
         response = await asyncio.to_thread(
             client.chat.completions.create,
             model=self.model,
@@ -112,9 +112,9 @@ class OpenAIProvider(BaseProvider):
             presence_penalty=config["presence_penalty"],
             stop=config.get("stop"),
         )
-        
+
         return response.choices[0].message.content or ""
-    
+
     def generate_stream(
         self,
         prompt: str,
@@ -123,15 +123,15 @@ class OpenAIProvider(BaseProvider):
         **kwargs,
     ):
         client = self._get_client()
-        
+
         system = system_prompt or self._build_system_prompt(task_type)
         config = self._merge_config(**kwargs)
-        
+
         messages = [
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ]
-        
+
         stream = client.chat.completions.create(
             model=self.model,
             messages=messages,
@@ -140,7 +140,7 @@ class OpenAIProvider(BaseProvider):
             top_p=config["top_p"],
             stream=True,
         )
-        
+
         for chunk in stream:
             if chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content

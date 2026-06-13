@@ -1,7 +1,7 @@
 """
 SplitMind - Privacy-preserving multi-agent task orchestration system.
 
-A system that splits tasks for privacy protection, distributes them to 
+A system that splits tasks for privacy protection, distributes them to
 different AI providers, and aggregates the results.
 """
 
