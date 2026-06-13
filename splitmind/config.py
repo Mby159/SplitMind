@@ -3,9 +3,13 @@ SplitMind Configuration Management
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Optional
+
+from dotenv import load_dotenv
 from pydantic import BaseModel
+
 from splitmind.core.engine import ExecutionMode
 
 
@@ -108,10 +112,6 @@ class Settings(BaseModel):
     local_model_url: str = "http://localhost:11434/api"
     local_model_name: str = "llama3.2:3b"
 
-
-# Load settings from environment variables
-import os
-from dotenv import load_dotenv
 
 # Load .env file if it exists
 load_dotenv()
