@@ -10,6 +10,8 @@ import re
 import json
 from dataclasses import dataclass, field
 
+from splitmind.core.privacy import PrivacyHandler
+
 
 class TaskType(str, Enum):
     ANALYSIS = "analysis"
@@ -249,9 +251,12 @@ class TaskSplitter:
         self.max_subtasks = max_subtasks
         self.semantic_threshold = semantic_threshold
 
+        self.privacy_handler = PrivacyHandler()
         self._sensitive_patterns = self._get_default_patterns()
         if custom_patterns:
-            self._sensitive_patterns.extend(custom_patterns)
+            for idx, pattern in enumerate(custom_patterns):
+                self._sensitive_patterns[f"custom_{idx}"] = re.compile(pattern, re.IGNORECASE)
+                self.privacy_handler.add_custom_pattern(f"custom_{idx}", pattern)
         self._counter = 0
 
     def _get_default_patterns(self) -> Dict[str, re.Pattern]:
@@ -272,28 +277,47 @@ class TaskSplitter:
         self._counter += 1
         return f"subtask_{self._counter:03d}"
 
+    def _placeholder_type(self, info_type: str) -> str:
+        """Normalize PrivacyHandler types for stable SplitMind placeholders."""
+        if info_type == "id_card_cn":
+            return "id_card"
+        if info_type == "address_cn":
+            return "address"
+        return info_type
+
     def detect_sensitive_info(self, text: str) -> Dict[str, List[str]]:
-        detected = {}
-        for info_type, pattern in self._sensitive_patterns.items():
-            matches = pattern.findall(text)
-            if matches:
-                detected[info_type] = list(set(matches))
+        """Detect sensitive information using the shared PrivacyHandler source of truth.
+
+        Values are returned in text-position order. Repeated values are preserved
+        because placeholder mapping must be deterministic by occurrence, not by
+        a deduplicating set.
+        """
+        detected: Dict[str, List[str]] = {}
+        for item in sorted(self.privacy_handler.detect(text), key=lambda i: i.position[0]):
+            info_type = self._placeholder_type(item.info_type)
+            detected.setdefault(info_type, []).append(item.original_value)
         return detected
 
     def redact_text(self, text: str) -> tuple[str, Dict[str, str]]:
         if not self.enable_auto_redaction:
             return text, {}
 
+        items = sorted(self.privacy_handler.detect(text), key=lambda i: i.position[0])
+        counters: Dict[str, int] = {}
+        placeholders: Dict[str, str] = {}
+        replacements: List[Tuple[int, int, str]] = []
+
+        for item in items:
+            info_type = self._placeholder_type(item.info_type)
+            idx = counters.get(info_type, 0)
+            counters[info_type] = idx + 1
+            placeholder = f"[REDACTED_{info_type.upper()}_{idx}]"
+            placeholders[placeholder] = item.original_value
+            replacements.append((item.position[0], item.position[1], placeholder))
+
         redacted = text
-        placeholders = {}
-
-        sensitive_info = self.detect_sensitive_info(text)
-
-        for info_type, items in sensitive_info.items():
-            for idx, item in enumerate(items):
-                placeholder = f"[REDACTED_{info_type.upper()}_{idx}]"
-                placeholders[placeholder] = item
-                redacted = redacted.replace(item, placeholder, 1)
+        for start, end, placeholder in sorted(replacements, key=lambda r: r[0], reverse=True):
+            redacted = redacted[:start] + placeholder + redacted[end:]
 
         return redacted, placeholders
 

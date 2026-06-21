@@ -99,6 +99,44 @@ class TestTaskSplitter:
         execution_order = splitter.calculate_execution_order([subtask1, subtask2, subtask3])
         assert execution_order == ["1", "2", "3"]
 
+    def test_redaction_uses_privacy_handler_without_false_name_cn(self):
+        """实际子任务脱敏应与 PrivacyHandler 基础类型一致，避免把提示词误判成人名。"""
+        splitter = TaskSplitter()
+        task = "请分析客户需求，客户邮箱是 alice@example.com，手机号是 13800138000。"
+        result = splitter.split(task, strategy="single")
+        subtask = result.subtasks[0]
+
+        assert "[REDACTED_EMAIL_0]" in subtask.input_data
+        assert "[REDACTED_PHONE_0]" in subtask.input_data
+        assert "[REDACTED_NAME_CN_0]" not in subtask.input_data
+        assert subtask.sensitive_info == {
+            "[REDACTED_EMAIL_0]": "alice@example.com",
+            "[REDACTED_PHONE_0]": "13800138000",
+        }
+
+    def test_redaction_placeholder_order_is_position_stable(self):
+        """占位符编号应按文本出现位置稳定生成，且重复值按出现次数处理。"""
+        splitter = TaskSplitter()
+        text = "先联系 a@example.com，再联系 b@example.com，备用邮箱 a@example.com。"
+        redacted, mapping = splitter.redact_text(text)
+
+        assert redacted == "先联系 [REDACTED_EMAIL_0]，再联系 [REDACTED_EMAIL_1]，备用邮箱 [REDACTED_EMAIL_2]。"
+        assert mapping == {
+            "[REDACTED_EMAIL_0]": "a@example.com",
+            "[REDACTED_EMAIL_1]": "b@example.com",
+            "[REDACTED_EMAIL_2]": "a@example.com",
+        }
+
+    def test_engine_privacy_report_matches_subtask_redaction_types(self):
+        """引擎隐私报告和实际子任务映射不应描述两套不同的脱敏行为。"""
+        engine = SplitMindEngine(config=ExecutionConfig(execution_mode=ExecutionMode.LOCAL_ONLY))
+        task = "请分析客户需求，客户邮箱是 alice@example.com，手机号是 13800138000。"
+        result = engine.execute_sync(task, split_strategy="single")
+
+        subtask = result.split_result.subtasks[0]
+        assert result.privacy_report["items_by_type"] == {"email": 1, "phone": 1}
+        assert set(subtask.sensitive_info.keys()) == {"[REDACTED_EMAIL_0]", "[REDACTED_PHONE_0]"}
+
 class TestResultAggregator:
     """测试结果聚合器功能"""
     
