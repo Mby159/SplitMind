@@ -314,8 +314,14 @@ class SplitMindEngine:
                 for attempt in range(retries):
                     try:
                         start = datetime.now()
+                        placeholders = list(subtask.sensitive_info.keys())
+                        system_prompt = provider.compose_system_prompt(
+                            task_type=subtask.task_type.value,
+                            placeholders=placeholders,
+                        )
                         result = await provider.generate_async(
                             prompt=subtask.input_data,
+                            system_prompt=system_prompt,
                             task_type=subtask.task_type.value,
                         )
                         execution_time = (datetime.now() - start).total_seconds()
