@@ -108,6 +108,46 @@ class BaseProvider(ABC):
 
         return base_prompt
 
+    @staticmethod
+    def build_placeholder_preservation_instruction(
+        placeholders: Optional[List[str]],
+    ) -> str:
+        """Build a privacy instruction telling the model to preserve placeholders.
+
+        Only placeholder IDs (e.g. ``[REDACTED_EMAIL_0]``) are passed here.
+        The original sensitive values are never included; they stay local.
+        Returns an empty string when there are no placeholders.
+        """
+        if not placeholders:
+            return ""
+        ids = ", ".join(sorted(set(placeholders)))
+        return (
+            "The user input contains privacy placeholders such as "
+            f"{ids}. These are opaque tokens that replace redacted private "
+            "information. Do not translate, alter, reformat, split, remove, or "
+            "invent these placeholders. If you need to refer to a redacted value, "
+            "copy the placeholder exactly as written. Do not ask for the original "
+            "value."
+        )
+
+    def compose_system_prompt(
+        self,
+        task_type: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        placeholders: Optional[List[str]] = None,
+    ) -> str:
+        """Compose the task system prompt with optional placeholder rules.
+
+        Uses ``system_prompt`` if given, otherwise the provider's task prompt,
+        then appends the placeholder-preservation instruction when placeholders
+        are present.
+        """
+        base = system_prompt or self._build_system_prompt(task_type)
+        instruction = self.build_placeholder_preservation_instruction(placeholders)
+        if instruction:
+            return f"{base}\n\n{instruction}"
+        return base
+
     def _merge_config(self, **kwargs) -> Dict[str, Any]:
         config = {
             "temperature": kwargs.get("temperature", self.config.temperature),
