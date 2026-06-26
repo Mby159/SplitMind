@@ -2,11 +2,12 @@
 SplitMind Engine - Main orchestration engine.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Iterable
 from pydantic import BaseModel, Field
 from enum import Enum
 import asyncio
 from datetime import datetime
+import re
 
 from splitmind.core.splitter import TaskSplitter, TaskSplitResult, SubTask, TaskType
 from splitmind.core.aggregator import (
@@ -173,6 +174,8 @@ class SplitMindEngine:
                 else:
                     subtask_results = await self._execute_with_local(split_result.subtasks)
 
+            self._attach_placeholder_validation(split_result.subtasks, subtask_results)
+
             # Step 5: Result Aggregation
             aggregated_result = self.result_aggregator.aggregate(
                 results=subtask_results,
@@ -193,6 +196,12 @@ class SplitMindEngine:
             for st in split_result.subtasks:
                 all_sensitive.update(st.sensitive_info)
 
+            provider_placeholder_validation = self._merge_placeholder_validation(subtask_results)
+            placeholder_validation = self._validate_placeholders_in_text(
+                final_result,
+                all_sensitive.keys(),
+            )
+
             if all_sensitive and isinstance(final_result, str):
                 final_result = self.result_aggregator.restore_sensitive_info(
                     final_result,
@@ -206,6 +215,8 @@ class SplitMindEngine:
                 "local_model_used": bool(self.local_model and self.local_model.is_available()),
                 "split_strategy_used": split_strategy,
                 "providers_used": list(set(r.provider for r in subtask_results)),
+                "placeholder_validation": placeholder_validation,
+                "provider_placeholder_validation": provider_placeholder_validation,
             }
 
             return ExecutionResult(
@@ -372,6 +383,113 @@ class SplitMindEngine:
             return await self._execute_with_local(subtasks)
 
         return results
+
+    @staticmethod
+    def _validate_placeholders_in_text(
+        text: str,
+        expected_placeholders: Iterable[str],
+    ) -> Dict[str, Any]:
+        """Lightweight placeholder integrity check for provider output.
+
+        This records evidence only. It does not attempt fuzzy recovery or mutate
+        model output. Restoration remains the exact placeholder replacement step.
+        """
+        expected = list(expected_placeholders)
+        expected_set = set(expected)
+        text = text or ""
+
+        observed = re.findall(r"\[REDACTED_[A-Z0-9_]+_\d+\]", text)
+        observed_set = set(observed)
+        found = [placeholder for placeholder in expected if placeholder in text]
+        missing = [placeholder for placeholder in expected if placeholder not in text]
+        unexpected = sorted(observed_set - expected_set)
+
+        placeholder_like = re.findall(r"\[?REDACTED[^\s，。,.!?;:]*\]?", text, flags=re.IGNORECASE)
+        mangled = sorted(
+            {
+                candidate
+                for candidate in placeholder_like
+                if candidate not in expected_set and candidate not in observed_set
+            }
+        )
+
+        return {
+            "ok": not missing and not unexpected and not mangled,
+            "expected_placeholders": expected,
+            "found_placeholders": found,
+            "missing_placeholders": missing,
+            "unexpected_placeholders": unexpected,
+            "mangled_placeholders": mangled,
+        }
+
+    def _attach_placeholder_validation(
+        self,
+        subtasks: List[SubTask],
+        results: List[SubTaskResult],
+    ) -> None:
+        """Attach per-subtask placeholder validation metadata to results."""
+        subtasks_by_id = {subtask.id: subtask for subtask in subtasks}
+        for result in results:
+            subtask = subtasks_by_id.get(result.subtask_id)
+            expected = list(subtask.sensitive_info.keys()) if subtask else []
+            result.metadata["placeholder_validation"] = self._validate_placeholders_in_text(
+                result.result,
+                expected,
+            )
+
+    @staticmethod
+    def _merge_placeholder_validation(results: List[SubTaskResult]) -> Dict[str, Any]:
+        """Merge per-result placeholder validation into execution metadata."""
+        validations = [
+            result.metadata.get("placeholder_validation", {})
+            for result in results
+            if result.metadata.get("placeholder_validation")
+        ]
+
+        def unique_ordered(values: Iterable[str]) -> List[str]:
+            seen = set()
+            ordered = []
+            for value in values:
+                if value not in seen:
+                    seen.add(value)
+                    ordered.append(value)
+            return ordered
+
+        expected = unique_ordered(
+            placeholder
+            for validation in validations
+            for placeholder in validation.get("expected_placeholders", [])
+        )
+        found = unique_ordered(
+            placeholder
+            for validation in validations
+            for placeholder in validation.get("found_placeholders", [])
+        )
+        missing = unique_ordered(
+            placeholder
+            for validation in validations
+            for placeholder in validation.get("missing_placeholders", [])
+        )
+        unexpected = unique_ordered(
+            placeholder
+            for validation in validations
+            for placeholder in validation.get("unexpected_placeholders", [])
+        )
+        mangled = unique_ordered(
+            placeholder
+            for validation in validations
+            for placeholder in validation.get("mangled_placeholders", [])
+        )
+
+        return {
+            "ok": not missing and not unexpected and not mangled,
+            "expected_placeholders": expected,
+            "found_placeholders": found,
+            "missing_placeholders": missing,
+            "unexpected_placeholders": unexpected,
+            "mangled_placeholders": mangled,
+            "subtasks_checked": len(validations),
+        }
 
     def execute_sync(
         self,
