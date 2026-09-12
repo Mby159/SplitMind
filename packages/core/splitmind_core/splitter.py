@@ -298,11 +298,16 @@ class TaskSplitter:
     ) -> TaskSplitResult:
         if llm_client is None:
             return self.split(task, context, strategy="auto")
-        
+
+        # P0 fix: redact sensitive info BEFORE sending to the LLM.
+        redacted_task, task_placeholders = self.redact_text(task)
+        redacted_context, ctx_placeholders = self.redact_text(context) if context else (None, {})
+        all_placeholders = {**task_placeholders, **ctx_placeholders}
+
         prompt = f"""Analyze the following task and split it into independent subtasks for privacy-preserving processing.
 
-Task: {task}
-Context: {context or "None"}
+Task: {redacted_task}
+Context: {redacted_context or "None"}
 
 Please output a JSON with the following structure:
 {{
@@ -328,13 +333,14 @@ Output only the JSON, no other text."""
             subtasks = []
             
             for idx, st in enumerate(result.get("subtasks", [])):
-                redacted, placeholders = self.redact_text(st.get("input_subset", task))
+                redacted, placeholders = self.redact_text(st.get("input_subset", redacted_task))
+                merged_placeholders = {**all_placeholders, **placeholders}
                 subtask = SubTask(
                     id=f"subtask_{idx:03d}",
                     description=st.get("description", ""),
                     task_type=TaskType(st.get("task_type", "mixed")),
                     input_data=redacted,
-                    sensitive_info=placeholders,
+                    sensitive_info=merged_placeholders,
                 )
                 subtasks.append(subtask)
             
