@@ -478,7 +478,7 @@ def demo(text: Optional[str], share: bool):
     # Footer
     console.print("\n" + "=" * 70)
     console.print('Try it with your own text: splitmind demo "your text here"')
-    console.print("Learn more: https://github.com/yourusername/splitmind")
+    console.print("Learn more: https://github.com/Mby159/SplitMind")
     console.print("=" * 70 + "\n")
 
 
