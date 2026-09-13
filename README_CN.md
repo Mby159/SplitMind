@@ -53,8 +53,13 @@ SplitMind 是一个创新的 AI 任务编排框架，通过任务拆分实现隐
 ### 安装
 
 ```bash
-pip install splitmind
+# 尚未发布到 PyPI（实测 https://pypi.org/pypi/splitmind/json 返回 404），先按源码安装：
+git clone https://github.com/Mby159/SplitMind.git
+cd SplitMind
+pip install -e .
 ```
+
+发布之后才是 `pip install splitmind`。
 
 ### 配置
 
