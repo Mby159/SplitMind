@@ -32,6 +32,9 @@ providers = [
     "openai>=1.0.0",
     "anthropic>=0.18.0",
     "httpx>=0.25.0",
+    # ollama_manager.get_system_info() 里 `import psutil`（无 try/except），
+    # 之前没有任何 extra 声明它 → 调用即 ImportError
+    "psutil>=5.0.0",
 ]
 
 # 命令行工具
@@ -41,22 +44,11 @@ cli = [
 ]
 
 # Web 界面
+# 注意：原来看起来需要的 jinja2 实测零引用（全包 grep 无 jinja2 / Jinja2Templates），已移除
 web = [
     "fastapi>=0.109.0",
     "uvicorn>=0.27.0",
     "python-multipart>=0.0.6",
-    "jinja2>=3.1.0",
-]
-
-# 异步支持
-async = [
-    "aiohttp>=3.9.0",
-    "pytest-asyncio>=0.23.0",
-]
-
-# 配置管理
-config = [
-    "pydantic-settings>=2.0.0",
 ]
 
 # 完整安装
@@ -66,14 +58,12 @@ all = [
     "openai>=1.0.0",
     "anthropic>=0.18.0",
     "httpx>=0.25.0",
+    "psutil>=5.0.0",
     "click>=8.0.0",
     "rich>=13.0.0",
-    "aiohttp>=3.9.0",
-    "jinja2>=3.1.0",
     "fastapi>=0.109.0",
     "uvicorn>=0.27.0",
     "python-multipart>=0.0.6",
-    "pydantic-settings>=2.0.0",
 ]
 
 # 开发工具
