@@ -56,9 +56,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/splitmind"
-Documentation = "https://github.com/yourusername/splitmind#readme"
-Repository = "https://github.com/yourusername/splitmind.git"
+Homepage = "https://github.com/Mby159/SplitMind"
+Documentation = "https://github.com/Mby159/SplitMind#readme"
+Repository = "https://github.com/Mby159/SplitMind.git"
 
 [tool.hatch.version]
 path = "splitmind_providers/__init__.py"

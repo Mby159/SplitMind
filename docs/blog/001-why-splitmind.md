@@ -157,6 +157,6 @@ pip install splitmind
 splitmind demo "你的文本"
 ```
 
-**GitHub**: https://github.com/yourusername/splitmind
+**GitHub**: https://github.com/Mby159/SplitMind
 
 **文档**: https://splitmind.readthedocs.io

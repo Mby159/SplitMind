@@ -110,7 +110,7 @@ pip install splitmind-core[dev]
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](https://github.com/yourusername/splitmind/blob/main/CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](https://github.com/Mby159/SplitMind/blob/main/CONTRIBUTING.md) for details.
 
 ## 📄 License
 

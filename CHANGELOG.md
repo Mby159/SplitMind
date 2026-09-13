@@ -28,4 +28,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No sensitive data sent to external AI providers
 - Configurable privacy protection levels
 
-[0.1.0]: https://github.com/yourusername/splitmind/releases/tag/v0.1.0
+[0.1.0]: https://github.com/Mby159/SplitMind/releases/tag/v0.1.0

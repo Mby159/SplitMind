@@ -95,10 +95,10 @@ splitmind = "splitmind.cli:main"
 # 内置 providers 已在代码中自动注册
 
 [project.urls]
-Homepage = "https://github.com/yourusername/splitmind"
-Documentation = "https://github.com/yourusername/splitmind#readme"
-Repository = "https://github.com/yourusername/splitmind"
-Issues = "https://github.com/yourusername/splitmind/issues"
+Homepage = "https://github.com/Mby159/SplitMind"
+Documentation = "https://github.com/Mby159/SplitMind#readme"
+Repository = "https://github.com/Mby159/SplitMind"
+Issues = "https://github.com/Mby159/SplitMind/issues"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
