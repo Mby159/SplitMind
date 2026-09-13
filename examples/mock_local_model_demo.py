@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 """
-Test script for Core module with mock local model.
+Demo: Core module with a mock local model.
+
+运行：python examples/mock_local_model_demo.py（在仓库根目录执行）
+之前按脚本方式跑会 ModuleNotFoundError: No module named 'splitmind'，
+因为 sys.path[0] 是 examples/ 而不是仓库根目录。
 """
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from splitmind.core.engine import SplitMindEngine, ExecutionConfig
 from splitmind.core.local_model import LocalModelConfig, LocalModelBackend

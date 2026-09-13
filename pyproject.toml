@@ -109,6 +109,12 @@ where = ["."]
 include = ["splitmind*"]
 exclude = ["packages*"]
 
+[tool.pytest.ini_options]
+# 只收集 tests/。examples/ 里有两个历史脚本的名字以 _test.py 结尾
+# （comprehensive_test.py、providers_test.py），它们 import 的是废弃的
+# packages/ 布局，裸跑 `pytest` 会因此直接报 collection error。
+testpaths = ["tests"]
+
 [tool.black]
 line-length = 100
 target-version = ["py39", "py310", "py311", "py312"]

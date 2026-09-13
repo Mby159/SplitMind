@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 """
-Test script for SplitMind provider plugin system
+Check script for the SplitMind provider plugin system.
+
+运行：python examples/provider_plugin_check.py（在仓库根目录执行）
 """
 
-import sys
 import os
+import sys
+from pathlib import Path
 
-# Add the project root to Python path
-sys.path.insert(0, os.path.abspath('.'))
+# Add the project root to Python path (independent of the caller's cwd)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Windows 控制台默认 GBK，而本脚本会打印 ✓/✅，否则直接 UnicodeEncodeError 中断
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from splitmind.providers import (
     registry, 
